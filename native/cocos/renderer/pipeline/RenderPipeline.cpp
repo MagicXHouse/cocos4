@@ -115,10 +115,10 @@ bool RenderPipeline::activate(gfx::Swapchain * /*swapchain*/) {
     _pipelineSceneData->activate(_device);
 #if CC_USE_DEBUG_RENDERER
     CC_DEBUG_RENDERER->activate(_device);
-    addRenderCommand("debug-renderer", std::make_shared<DebugRendererRenderCommand>(getPipelineSceneData()));
+    addRenderCommand(cc::pipeline::DEBUG_RENDERER_COMMAND, std::make_shared<DebugRendererRenderCommand>(getPipelineSceneData()));
 #endif
 #if CC_USE_GEOMETRY_RENDERER
-    addRenderCommand("geometry-renderer", std::make_shared<GeometryRendererRenderCommand>(getPipelineSceneData()));
+    addRenderCommand(cc::pipeline::GEOMETRY_RENDERER_COMMAND, std::make_shared<GeometryRendererRenderCommand>(getPipelineSceneData()));
 #endif
 
     // generate macros here rather than construct func because _clusterEnabled

@@ -1437,10 +1437,10 @@ bool NativePipeline::activate(gfx::Swapchain *swapchainIn) {
     pipelineSceneData->activate(device);
 #if CC_USE_DEBUG_RENDERER
     DebugRenderer::getInstance()->activate(device);
-    addCustomRenderCommand("debug-renderer", std::make_shared<DebugRendererRenderCommand>(getPipelineSceneData()));
+    addCustomRenderCommand(cc::pipeline::DEBUG_RENDERER_COMMAND, std::make_shared<DebugRendererRenderCommand>(getPipelineSceneData()));
 #endif
 #if CC_USE_GEOMETRY_RENDERER
-    addCustomRenderCommand("geometry-renderer", std::make_shared<GeometryRendererRenderCommand>(getPipelineSceneData()));
+    addCustomRenderCommand(cc::pipeline::GEOMETRY_RENDERER_COMMAND, std::make_shared<GeometryRendererRenderCommand>(getPipelineSceneData()));
 #endif
     // generate macros here rather than construct func because _clusterEnabled
     // switch may be changed in root.ts setRenderPipeline() function which is after

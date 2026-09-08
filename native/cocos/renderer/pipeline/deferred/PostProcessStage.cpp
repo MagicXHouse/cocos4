@@ -228,7 +228,7 @@ void PostProcessStage::render(scene::Camera *camera) {
         _uiPhase->render(camera, renderPass);
         renderProfiler(renderPass, cmdBuff, pipeline->getProfiler(), camera);
 #if CC_USE_DEBUG_RENDERER
-        if (auto *command = pipeline->getRenderCommand("debug-renderer")) {
+        if (auto *command = pipeline->getRenderCommand(cc::pipeline::DEBUG_RENDERER_COMMAND)) {
             command->beginRenderCommand({renderPass, cmdBuff, pipeline->getPipelineSceneData(), camera});
         }
 #endif

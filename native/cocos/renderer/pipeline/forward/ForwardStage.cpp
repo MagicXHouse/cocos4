@@ -259,7 +259,7 @@ void ForwardStage::render(scene::Camera *camera) {
         }
 
 #if CC_USE_GEOMETRY_RENDERER
-        if (auto *command = pipeline->getRenderCommand("geometry-renderer")) {
+        if (auto *command = pipeline->getRenderCommand(cc::pipeline::GEOMETRY_RENDERER_COMMAND)) {
             command->beginRenderCommand({renderPass, cmdBuff, pipeline->getPipelineSceneData(), camera});
         }
 #endif
@@ -267,7 +267,7 @@ void ForwardStage::render(scene::Camera *camera) {
         _uiPhase->render(camera, renderPass);
         renderProfiler(renderPass, cmdBuff, _pipeline->getProfiler(), camera);
 #if CC_USE_DEBUG_RENDERER
-        if (auto *command = pipeline->getRenderCommand("debug-renderer")) {
+        if (auto *command = pipeline->getRenderCommand(cc::pipeline::DEBUG_RENDERER_COMMAND)) {
             command->beginRenderCommand({renderPass, cmdBuff, pipeline->getPipelineSceneData(), camera});
         }
 #endif

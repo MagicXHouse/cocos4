@@ -688,6 +688,9 @@ static constexpr uint32_t CLUSTER_LIGHT_BINDING = 4;
 static constexpr uint32_t CLUSTER_LIGHT_INDEX_BINDING = 5;
 static constexpr uint32_t CLUSTER_LIGHT_GRID_BINDING = 6;
 
+constexpr const char *GEOMETRY_RENDERER_COMMAND = "geometry-renderer";
+constexpr const char *DEBUG_RENDERER_COMMAND = "debug-renderer";
+
 void localDescriptorSetLayoutResizeMaxJoints(uint32_t maxCount);
 
 } // namespace pipeline

@@ -916,7 +916,7 @@ SceneBuilder *NativeRenderQueueBuilder::addScene(
 #if CC_USE_GEOMETRY_RENDERER
     if (any(sceneFlags & SceneFlags::GEOMETRY)) {
         auto &data = get(RenderGraph::DataTag{}, *renderGraph, sceneID);
-        data.custom = "geometry-renderer";
+        data.custom = cc::pipeline::GEOMETRY_RENDERER_COMMAND;
     }
 #endif
 
@@ -1109,7 +1109,7 @@ void NativeRenderQueueBuilder::addProfiler(const scene::Camera *camera) {
         *renderGraph,
         queueId);
     auto &debugData = get(RenderGraph::DataTag{}, *renderGraph, debugId);
-    debugData.custom = "debug-renderer";
+    debugData.custom = cc::pipeline::DEBUG_RENDERER_COMMAND;
     setCameraUBOValues(
         *camera,
         *layoutGraph,
