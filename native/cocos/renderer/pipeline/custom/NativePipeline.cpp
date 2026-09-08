@@ -117,13 +117,17 @@ public:
     explicit DebugRendererRenderCommand(pipeline::PipelineSceneData *sceneData)
     : _sceneData(sceneData) {}
 
-    void beginRenderCommand(const CustomRenderGraphContext &rg, RenderGraph::vertex_descriptor) override {
+    void beginRenderCommand(const CustomRenderGraphContext &rg, RenderGraph::vertex_descriptor vertID) override {
+        std::ignore = vertID;
         if (rg.currentRenderPass) {
             DebugRenderer::getInstance()->render(rg.currentRenderPass, rg.primaryCommandBuffer, _sceneData);
         }
     }
 
-    void endRenderCommand(const CustomRenderGraphContext &, RenderGraph::vertex_descriptor) override {}
+    void endRenderCommand(const CustomRenderGraphContext &rg, RenderGraph::vertex_descriptor vertID) override {
+        std::ignore = rg;
+        std::ignore = vertID;
+    }
 
 private:
     pipeline::PipelineSceneData *_sceneData{nullptr};
@@ -144,7 +148,10 @@ public:
         }
     }
 
-    void endRenderCommand(const CustomRenderGraphContext &, RenderGraph::vertex_descriptor) override {}
+    void endRenderCommand(const CustomRenderGraphContext &rg, RenderGraph::vertex_descriptor vertID) override {
+        std::ignore = vertID;
+        std::ignore = rg;
+    }
 
 private:
     pipeline::PipelineSceneData *_sceneData{nullptr};
