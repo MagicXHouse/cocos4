@@ -149,6 +149,23 @@ CC_FORCE_INLINE Tgt bit_cast(const Src &src) { // NOLINT(readability-identifier-
     return tgt;
 }
 
+// Map a float to a uint32 whose unsigned-integer ordering matches the float's
+// numeric ordering (the classic radix-sort "flip"):
+//   * non-negative: flip the sign bit
+//   * negative:      complement all bits
+// This maps [-inf, -0.0] to [0, 2^31) and [+0.0, +inf] to [2^31, 2^32), so the
+// unsigned comparison orders floats correctly. NaN must be excluded by the caller.
+//
+// Requires IEEE 754 binary32 (32-bit) floats, which every Cocos platform has.
+static_assert(sizeof(float) == sizeof(uint32_t), "float must be 32-bit");
+static_assert(std::numeric_limits<float>::is_iec559, "float must be IEEE 754");
+
+CC_FORCE_INLINE uint32_t floatToSortableUint(float value) {
+    constexpr uint32_t signBit = 0x80000000U;
+    const auto bits = bit_cast<uint32_t>(value);
+    return (bits & signBit) ? ~bits : (bits ^ signBit);
+}
+
 } // namespace numext
 
 // Following the Arm ACLE arm_neon.h should also include arm_fp16.h but not all
@@ -160,7 +177,7 @@ CC_FORCE_INLINE Tgt bit_cast(const Src &src) { // NOLINT(readability-identifier-
 
 // Code from https://gitlab.com/libeigen/eigen/-/blob/master/Eigen/src/Core/arch/Default/Half.h#L586
 struct HalfRaw {
-    constexpr HalfRaw() : x(0) {}
+    constexpr HalfRaw() : x(0) {} // NOLINT(modernize-use-default-member-init)
 #if defined(CC_HAS_ARM64_FP16_SCALAR_ARITHMETIC)
     explicit HalfRaw(uint16_t raw) : x(numext::bit_cast<__fp16>(raw)) {
     }
