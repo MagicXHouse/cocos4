@@ -30,6 +30,7 @@
 #include <bitset>
 #include <cerrno>
 #include <climits>
+#include <cstring>
 #include <limits>
 #include "base/Macros.h"
 #include "base/TypeDef.h"
@@ -145,7 +146,7 @@ CC_FORCE_INLINE Tgt bit_cast(const Src &src) { // NOLINT(readability-identifier-
     Tgt tgt;
     // Load src into registers first. This allows the memcpy to be elided by CUDA.
     const Src staged = src;
-    memcpy(&tgt, &staged, sizeof(Tgt));
+    std::memcpy(&tgt, &staged, sizeof(Tgt));
     return tgt;
 }
 
@@ -177,16 +178,17 @@ CC_FORCE_INLINE uint32_t floatToSortableUint(float value) {
 
 // Code from https://gitlab.com/libeigen/eigen/-/blob/master/Eigen/src/Core/arch/Default/Half.h#L586
 struct HalfRaw {
-    constexpr HalfRaw() : x(0) {} // NOLINT(modernize-use-default-member-init)
+    constexpr HalfRaw() : x(0) {}
 #if defined(CC_HAS_ARM64_FP16_SCALAR_ARITHMETIC)
     explicit HalfRaw(uint16_t raw) : x(numext::bit_cast<__fp16>(raw)) {
     }
-    __fp16 x;
+    __fp16 x; // NOLINT(modernize-use-default-member-init)
 #else
     explicit constexpr HalfRaw(uint16_t raw) : x(raw) {}
     uint16_t x; // NOLINT(modernize-use-default-member-init)
 #endif
 };
+
 
 // Conversion routines, including fallbacks for the host or older CUDA.
 // Note that newer Intel CPUs (Haswell or newer) have vectorized versions of
