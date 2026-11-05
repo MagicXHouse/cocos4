@@ -42,10 +42,11 @@ describe('ThermalController', () => {
         }
     };
 
-    const makeSampler = (avgMs = 0) => ({
+    const makeSampler = (avgMs = 0, sampleCount = 100) => ({
         start: jest.fn(),
         stop: jest.fn(),
         getAverageFrameTimeMs: jest.fn(() => avgMs),
+        getSampleCount: jest.fn(() => sampleCount),
         reset: jest.fn(),
     });
 
@@ -64,6 +65,40 @@ describe('ThermalController', () => {
         restore: jest.fn(),
         isAtFloor: jest.fn(),
         getCurrent: jest.fn(() => 60),
+    });
+
+    test('窗口样本太少（<30）时不判定，避免单个异常帧把均值拉爆', () => {
+        // 复现真机/开发者工具里看到的：reset 之后窗口只有一个 993ms 的"假帧"
+        const sampler = makeSampler(993, 1);
+        const strategy = makeStrategy('DOWN');
+        const frameRateAction = makeFrameRateAction(true);
+        const scaleAction = {
+            stepDown: jest.fn(() => true),
+            stepUp: jest.fn(() => true),
+            restore: jest.fn(),
+            isAtFloor: jest.fn(() => false),
+            getCurrent: jest.fn(() => 1.0),
+        };
+
+        let now = 0;
+        const controller = new ThermalController(
+            { warmupSeconds: 0 }, sampler, strategy, frameRateAction, scaleAction, () => 50, () => now,
+        );
+        controller.enable();
+
+        fire();
+        expect(scaleAction.stepDown).not.toHaveBeenCalled();
+        expect(frameRateAction.stepDown).not.toHaveBeenCalled();
+        expect(strategy.update).not.toHaveBeenCalled();
+
+        // 样本攒够之后才允许判定（跨过 1s 评估间隔）
+        (sampler.getSampleCount as jest.Mock).mockReturnValue(100);
+        now += 1000;
+        fire();
+        expect(strategy.update).toHaveBeenCalled();
+        expect(scaleAction.stepDown).toHaveBeenCalled();
+
+        controller.disable();
     });
 
     test('DOWN 驱动帧率降档，且降档后 sampler.reset() 被调用', () => {

@@ -75,6 +75,13 @@ function defaultTimeSource (): number {
 export class ThermalController {
     private static readonly EVALUATE_INTERVAL_MS = 1000;
     private static readonly RESUME_WARMUP_MS = 5000;
+    /**
+     * 判定所需的最少样本数（窗口内原始帧数）。
+     * 20s 窗口在 60fps 下有 ~1200 个样本；少于这个数说明窗口还没填起来
+     * （刚 reset / 环境被节流到 1fps），此时均值没有统计意义。
+     * 取 30：60fps 下约 0.5s，15fps 下约 2s，足够消除单帧异常的影响。
+     */
+    private static readonly MIN_DECISION_SAMPLES = 30;
 
     private _config: ThermalConfig;
     private _sampler: IFrameTimeSampler;
@@ -465,6 +472,17 @@ export class ThermalController {
         const avgMs = this._sampler.getAverageFrameTimeMs();
         if (avgMs <= 0) {
             return; // The sliding window is empty.
+        }
+
+        // 窗口里样本太少时不许判定。
+        // 触发场景：预热结束 reset 之后、resume 之后、手动 stepUp 之后，窗口是"半空"的；
+        // 微信开发者工具/后台节流时每个 tick 间隔接近 1s，但 993ms < MAX_FRAME_DELTA_MS(1000) 不会被丢弃，
+        // 于是"一个 993ms 的假帧"直接变成 avg=993ms（diff +5858%）→ 误降一档。
+        // 真机上同样会发生（GC 长停顿、切前后台的边缘情况），所以按样本数兜底，而不是只靠时间阈值。
+        if (this._sampler.getSampleCount) {
+            if (this._sampler.getSampleCount() < ThermalController.MIN_DECISION_SAMPLES) {
+                return;
+            }
         }
 
         if (this._config.scaleEffectCheck) {

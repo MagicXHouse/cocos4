@@ -270,6 +270,13 @@ export interface IFrameTimeSampler {
     start (): void;
     stop (): void;
     getAverageFrameTimeMs (): number;
+    /**
+     * @en Number of samples currently in the window. Optional; when provided, the controller refuses to
+     * decide on a nearly-empty window (a single slow gap would otherwise dominate the average).
+     * @zh 当前窗口内的样本数。可选；提供后控制器不会在"半空窗口"上下判定
+     * （否则一个异常慢帧就会把均值拉爆，导致误降档）。
+     */
+    getSampleCount?(): number;
     reset (): void;
     /**
      * @en Length of the sliding window in seconds. Optional: when provided, the controller aligns its

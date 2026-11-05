@@ -123,6 +123,18 @@ export class FrameTimeSampler implements IFrameTimeSampler {
      * @zh 返回滑动窗口内的平均帧时间（毫秒），窗口为空时返回 0。
      * 处于停止状态时（控制器 pause() 只调 stop()），返回的是停止那一刻的值 —— 属于陈旧值，不是 0。
      */
+    /**
+     * @en Number of samples currently in the sliding window.
+     * The controller uses it to avoid deciding on a nearly-empty window: after `reset()` (warm-up end,
+     * resume, or a manual action) a single slow "frame" can otherwise dominate the average.
+     * @zh 当前滑动窗口里的样本数。控制器用它避免"半空窗口"下就下判定：
+     * `reset()` 之后（预热结束、resume、手动动作）窗口里可能只有一两个样本，
+     * 一个 993ms 的异常间隔就能把均值抬到 +5858%，直接误降档。
+     */
+    public getSampleCount (): number {
+        return this._samples.length;
+    }
+
     public getAverageFrameTimeMs (): number {
         const { length } = this._samples;
         if (length === 0) {
