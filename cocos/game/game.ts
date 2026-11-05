@@ -23,7 +23,7 @@
  THE SOFTWARE.
 */
 
-import { DEBUG, EDITOR, NATIVE, PREVIEW, TEST, EDITOR_NOT_IN_PREVIEW, WECHAT, USE_XR, NODEJS } from 'internal:constants';
+import { DEBUG, EDITOR, NATIVE, PREVIEW, TEST, EDITOR_NOT_IN_PREVIEW, WECHAT, WECHAT_MINI_PROGRAM, MINIGAME, USE_XR, NODEJS } from 'internal:constants';
 import { systemInfo } from 'pal/system-info';
 import { findCanvas, loadJsFile } from 'pal/env';
 import { Pacer } from 'pal/pacer';
@@ -36,6 +36,8 @@ import { EventTarget, AsyncDelegate, sys, macro, VERSION, cclegacy, screen, sett
 import { input } from '../input';
 import { deviceManager, LegacyRenderMode } from '../gfx';
 import { SplashScreen } from './splash-screen';
+import { shouldRenderFrame, defaultSoftwareFrameLimitEnabled } from './frame-limiter';
+import type { FrameLimiterState } from './frame-limiter';
 import { Layers, Node } from '../scene-graph';
 import { builtinResMgr } from '../asset/asset-manager/builtin-res-mgr';
 import { director, DirectorEvent } from './director';
@@ -407,6 +409,27 @@ export class Game extends EventTarget {
     }
 
     /**
+     * @en Whether the engine applies software frame limiting when `frameRate < 60`.
+     * Defaults to true on mini-game platforms (`MINIGAME`: WeChat / ByteDance / Alipay / Taobao /
+     * OPPO / vivo / Huawei…) and WeChat mini program, where `setPreferredFramesPerSecond` may be
+     * ignored. Web already throttles inside the pacer (`_handleRAF`) and Native honors the request,
+     * so the default there is false to avoid double throttling. Assign explicitly to override.
+     * @zh 当 `frameRate < 60` 时引擎是否做软件限帧。默认在任意小游戏平台（`MINIGAME`：微信 / 抖音 /
+     * 支付宝 / 淘宝 / OPPO / vivo / 华为…）与微信小程序开启 —— 那里的 setPreferredFramesPerSecond 可能
+     * 被忽略。Web 的 pacer 内部已经节流、Native 会按请求交付 tick，所以那边默认关闭，避免双重节流。
+     * 需要覆盖时直接赋值。
+     */
+    public get enableSoftwareFrameLimit (): boolean {
+        return this._softwareFrameLimitEnabled;
+    }
+    public set enableSoftwareFrameLimit (enabled: boolean) {
+        this._softwareFrameLimitEnabled = enabled;
+        // 关掉时清零累加器，避免下次打开用一个陈旧的 lastTime 算出巨大的 delta
+        this._frameLimiterState.accumulator = 0;
+        this._frameLimiterState.lastTime = 0;
+    }
+
+    /**
      * @en Expected frame rate of the game.
      * @zh 游戏的设定帧率。
      */
@@ -467,6 +490,12 @@ export class Game extends EventTarget {
     private _pausedByEngine = false;
     // frame control
     private _frameRate = 60;
+    private _frameLimiterState: FrameLimiterState = { accumulator: 0, lastTime: 0 };
+    /**
+     * E07：软件限帧开关。Web 的 pacer 自己会按 targetFrameRate 节流，再叠一层就是双重节流；
+     * 所以默认只在小游戏平台开（平台可能忽略 <60 的请求）。业务可运行时改。
+     */
+    private _softwareFrameLimitEnabled = defaultSoftwareFrameLimitEnabled(MINIGAME, WECHAT_MINI_PROGRAM);
     private _pacer: Pacer | null = null;
     private _initTime = 0;
     private _startTime = 0;
@@ -1083,6 +1112,12 @@ export class Game extends EventTarget {
                 this.onStart?.();
             }
         } else {
+            // Software frame limiting: when the target frame rate is below 60, skip frames so the
+            // game actually runs at the target rate even though RAF keeps firing at 60Hz.
+            if (this._softwareFrameLimitEnabled
+                && !shouldRenderFrame(this._frameLimiterState, performance.now(), this._frameRate)) {
+                return;
+            }
             director.tick(this._calculateDT(false));
         }
     }

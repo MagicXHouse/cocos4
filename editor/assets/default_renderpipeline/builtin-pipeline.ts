@@ -1814,10 +1814,22 @@ if (rendering) {
             cameraConfigs.enableProfiler = ppl.profiler && isGameView;
             cameraConfigs.remainingPasses = 0;
 
-            // Shading scale
-            cameraConfigs.shadingScale = cameraConfigs.settings.shadingScale;
-            cameraConfigs.enableShadingScale = cameraConfigs.settings.enableShadingScale
-                && cameraConfigs.shadingScale !== 1.0;
+            // Shading scale：运行时覆盖优先（pipelineSceneData.shadingScale 非 1.0 表示外部已设），
+            // 否则回落到 per-camera 编辑器设置（缺省）。shadingScale 与 enableShadingScale 两个字段都要覆盖。
+            // SCOPE: runtime shadingScale/FSR only applies to full 3D cameras. The Canvas/UI
+            // camera must stay at native resolution; its UI pass is not a DRS/FSR target.
+            const runtimeScale = ppl.shadingScale;
+            if (!cameraConfigs.enableFullPipeline) {
+                cameraConfigs.shadingScale = 1.0;
+                cameraConfigs.enableShadingScale = false;
+            } else if (runtimeScale !== 1.0) {
+                cameraConfigs.shadingScale = runtimeScale;
+                cameraConfigs.enableShadingScale = true;
+            } else {
+                cameraConfigs.shadingScale = cameraConfigs.settings.shadingScale;
+                cameraConfigs.enableShadingScale = cameraConfigs.settings.enableShadingScale
+                    && cameraConfigs.shadingScale !== 1.0;
+            }
 
             cameraConfigs.nativeWidth = Math.max(Math.floor(window.width), 1);
             cameraConfigs.nativeHeight = Math.max(Math.floor(window.height), 1);
