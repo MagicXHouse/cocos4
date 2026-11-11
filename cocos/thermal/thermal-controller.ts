@@ -87,6 +87,8 @@ export class ThermalController {
     private _sampler: IFrameTimeSampler;
     private _strategy: IThermalStrategy;
     private _frameRateAction: IThermalAction;
+    /** 帧率杠杆是否可用（setFrameRateEnabled；默认 true，测试里可隔离单个杠杆） */
+    private _frameRateEnabled = true;
     private _scaleAction?: IThermalAction;
     private _readCurrentFps: () => number;
     private _timeSource: FrameTimeSource;
@@ -272,6 +274,28 @@ export class ThermalController {
 
     public isScaleEnabled (): boolean {
         return this._scaleAction ? (this._scaleAction.isEnabled?.() ?? true) : false;
+    }
+
+    /**
+     * @en Enables/disables the frame-rate lever at runtime. When disabled the controller only uses
+     * the scale lever — useful for isolating "what does lowering resolution alone buy".
+     * @zh 运行时启用/禁用帧率杠杆。禁用后控制器只使用分辨率杠杆——
+     * 用来单独衡量"只降分辨率"能带来多少收益（A/B 实验要隔离单个杠杆）。
+     */
+    public setFrameRateEnabled (enabled: boolean): void {
+        if (this._frameRateEnabled === enabled) {
+            return;
+        }
+        this._frameRateEnabled = enabled;
+        if (!enabled) {
+            // 禁用时把帧率还原成原值，否则会留一个"已降但不会再升"的档位
+            this._frameRateAction.restore();
+        }
+        this._recomputeLevelFromActions();
+    }
+
+    public isFrameRateEnabled (): boolean {
+        return this._frameRateEnabled;
     }
 
     /**
@@ -617,6 +641,7 @@ export class ThermalController {
                         to = scaleAction.getCurrent();
                     }
                 } else {
+                    if (!this._frameRateEnabled) continue;
                     from = this._frameRateAction.getCurrent();
                     moved = this._frameRateAction.stepDown();
                     if (moved) {

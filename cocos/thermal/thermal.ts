@@ -114,6 +114,20 @@ export class Thermal {
     }
 
     /**
+     * @en Enables/disables the frame-rate lever at runtime. Disabling restores the original frame
+     * rate and leaves only the scale lever active — used to isolate "resolution only" experiments.
+     * @zh 运行时启用/禁用帧率杠杆。禁用时还原原帧率，只保留分辨率杠杆——
+     * 用于隔离"只降分辨率"的 A/B 实验。
+     */
+    public setFrameRateEnabled (enabled: boolean): void {
+        this._controller?.setFrameRateEnabled?.(enabled);
+    }
+
+    public isFrameRateEnabled (): boolean {
+        return this._controller?.isFrameRateEnabled?.() ?? true;
+    }
+
+    /**
      * @en Enables/disables the scale (shadingScale) lever at runtime. Disabling restores the
      * original scale and FSR state. The scale lever only affects 3D camera render targets; for
      * 2D/UI-heavy games keep it disabled and use the frame-rate lever only.

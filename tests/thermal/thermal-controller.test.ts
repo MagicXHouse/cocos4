@@ -918,3 +918,56 @@ describe('ThermalController', () => {
         controller.disable();
     });
 });
+
+describe('按杠杆隔离（A/B 实验用）', () => {
+    // 杠杆用真实的最小替身：记录当前档位与降了几档，够验证"哪个杠杆动了"
+    const makeLever = (levels: number[]) => {
+        let i = 0;
+        let enabled = true;
+        return {
+            stepDown: () => { if (!enabled) return false; if (i >= levels.length - 1) return false; i++; return true; },
+            stepUp: () => { if (i <= 0) return false; i--; return true; },
+            restore: () => { i = 0; },
+            isAtFloor: () => i >= levels.length - 1,
+            getCurrent: () => levels[i],
+            getStepsDown: () => i,
+            setEnabled: (v: boolean) => { enabled = v; if (!v) { i = 0; } },
+            isEnabled: () => enabled,
+        };
+    };
+    const sampler = () => ({
+        start: () => { /* noop */ }, stop: () => { /* noop */ }, reset: () => { /* noop */ },
+        getAverageFrameTimeMs: () => 20, getSampleCount: () => 100,
+    });
+    const strategy = () => ({
+        update: () => 'NONE', setThreshold: () => { /* noop */ }, setRecoverThreshold: () => { /* noop */ },
+        setRecoverWindowSeconds: () => { /* noop */ }, setCooldownSeconds: () => { /* noop */ }, reset: () => { /* noop */ },
+    });
+
+    test('setFrameRateEnabled(false) 后只动分辨率杠杆（帧率保持 60）', () => {
+        const scale = makeLever([1, 0.85, 0.7]);
+        const fps = makeLever([60, 30]);
+        const c = new ThermalController({ warmupSeconds: 0 }, sampler(), strategy(), fps, scale, () => 1) as any;
+        c.enable();
+
+        c.setFrameRateEnabled(false);
+        expect(c.isFrameRateEnabled()).toBe(false);
+
+        c.stepDown();
+        c.stepDown();
+        expect(fps.getCurrent()).toBe(60);        // 帧率杠杆被禁用
+        expect(scale.getCurrent()).toBeLessThan(1); // 分辨率动了
+    });
+
+    test('setScaleEnabled(false) 后只动帧率杠杆（分辨率保持 1.00）', () => {
+        const scale = makeLever([1, 0.85, 0.7]);
+        const fps = makeLever([60, 30]);
+        const c = new ThermalController({ warmupSeconds: 0 }, sampler(), strategy(), fps, scale, () => 1) as any;
+        c.enable();
+
+        c.setScaleEnabled(false);
+        c.stepDown();
+        expect(scale.getCurrent()).toBe(1);
+        expect(fps.getCurrent()).toBe(30);
+    });
+});
