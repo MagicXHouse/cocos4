@@ -29,6 +29,8 @@ jest.mock('../../cocos/thermal/thermal-controller', () => {
                 getShadingScale: jest.fn(() => 1.0),
                 setThreshold: jest.fn(),
                 setDowngradeOrder: jest.fn(),
+                setScaleEnabled: jest.fn(),
+                setFrameRateEnabled: jest.fn(),
                 reset: jest.fn(),
                 getLevel: jest.fn(() => 0),
                 stepDown: jest.fn(() => true),
@@ -189,5 +191,25 @@ describe('Thermal facade', () => {
         expect(state.shadingScale).toBe(1.0);
         expect(state.enabled).toBe(true);
     });
-});
 
+    test('enable 之前调用 setFrameRateEnabled(false)：写进配置，控制器创建时补上', () => {
+        const facade = new Thermal();
+        facade.setFrameRateEnabled(false);
+
+        // 控制器还没建，设置不能丢，要落到配置里
+        expect((facade as any)._config.enableFrameRate).toBe(false);
+
+        facade.enable({ minFrameRate: 30, warmupSeconds: 0, enableAutoUpgrade: false });
+        const controller = (facade as any)._controller;
+        expect(controller.setFrameRateEnabled).toHaveBeenCalledWith(false);
+    });
+
+    test('enable({ enableFrameRate: false }) 时控制器创建后帧率杠杆被关掉', () => {
+        const facade = new Thermal();
+        facade.enable({ minFrameRate: 30, warmupSeconds: 0, enableAutoUpgrade: false, enableFrameRate: false });
+
+        const controller = (facade as any)._controller;
+        expect(controller.setFrameRateEnabled).toHaveBeenCalledWith(false);
+    });
+
+});

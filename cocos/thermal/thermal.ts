@@ -120,6 +120,8 @@ export class Thermal {
      * 用于隔离"只降分辨率"的 A/B 实验。
      */
     public setFrameRateEnabled (enabled: boolean): void {
+        // 写进配置：控制器还没建时（enable 之前）也要生效，否则面板上的开关会被静默丢弃
+        this._config.enableFrameRate = enabled;
         this._controller?.setFrameRateEnabled?.(enabled);
     }
 
@@ -334,7 +336,12 @@ export class Thermal {
         this._fsr = fsr;
         const scaleAction = new ScaleAction(Thermal._sanitizeMinScale(config.minScale), undefined, undefined, undefined, fsr);
         scaleAction.setEnabled?.(config.enableScale !== false);
-        return new ThermalController(config, sampler, strategy, frameRateAction, scaleAction);
+        const controller = new ThermalController(config, sampler, strategy, frameRateAction, scaleAction);
+        // 与 enableScale 对称：构建期/运行时关掉的帧率杠杆，在控制器创建时补上
+        if (config.enableFrameRate === false) {
+            controller.setFrameRateEnabled?.(false);
+        }
+        return controller;
     }
 }
 

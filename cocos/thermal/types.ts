@@ -128,6 +128,13 @@ export interface ThermalConfig {
      */
     enableScale?: boolean;
     /**
+     * @en Whether the frame-rate lever is available. Default true. Set false to keep only the
+     * scale lever (e.g. "lower resolution, never lower fps" products).
+     * @zh 帧率杠杆是否可用，默认 true。设为 false 只保留分辨率杠杆
+     * （"只降分辨率、绝不降帧率"的产品）。与 enableScale 对称。
+     */
+    enableFrameRate?: boolean;
+    /**
      * @en Cool-down time in seconds between two consecutive adjustments. Default 10.
      * @zh 两次调整之间的冷却时间（秒），默认 10。
      */
