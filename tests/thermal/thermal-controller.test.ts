@@ -959,6 +959,25 @@ describe('按杠杆隔离（A/B 实验用）', () => {
         expect(scale.getCurrent()).toBeLessThan(1); // 分辨率动了
     });
 
+
+    test('setFrameRateEnabled(false) 后升档也只动分辨率（升降对称）', () => {
+        const scale = makeLever([1, 0.85, 0.7]);
+        const fps = makeLever([60, 30]);
+        const c = new ThermalController({ warmupSeconds: 0 }, sampler(), strategy(), fps, scale, () => 1) as any;
+        c.enable();
+
+        c.setFrameRateEnabled(false);
+        c.stepDown();   // 只降分辨率
+        c.stepDown();   // 0.70
+        expect(scale.getCurrent()).toBe(0.7);
+        expect(fps.getCurrent()).toBe(60);
+
+        // 手动升档（frameRate-first）：帧率杠杆被禁用，只能回升分辨率
+        expect(c.stepUp()).toBe(true);
+        expect(fps.getCurrent()).toBe(60);     // ★ 帧率没被升
+        expect(scale.getCurrent()).toBe(0.85); // 分辨率回来了
+    });
+
     test('setScaleEnabled(false) 后只动帧率杠杆（分辨率保持 1.00）', () => {
         const scale = makeLever([1, 0.85, 0.7]);
         const fps = makeLever([60, 30]);

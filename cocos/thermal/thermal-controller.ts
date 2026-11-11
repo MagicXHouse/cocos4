@@ -711,7 +711,7 @@ export class ThermalController {
                     to = scaleAction.getCurrent();
                 }
             }
-            if (!moved && (force || !this._isUpBlocked('frameRate', now))) {
+            if (!moved && this._frameRateEnabled && (force || !this._isUpBlocked('frameRate', now))) {
                 from = this._frameRateAction.getCurrent();
                 moved = this._frameRateAction.stepUp();
                 if (moved) {
@@ -721,7 +721,7 @@ export class ThermalController {
             }
         } else {
             // 手动/信号驱动：先回帧率，再回分辨率（现网行为）。
-            if (force || !this._isUpBlocked('frameRate', now)) {
+            if (this._frameRateEnabled && (force || !this._isUpBlocked('frameRate', now))) {
                 from = this._frameRateAction.getCurrent();
                 moved = this._frameRateAction.stepUp();
                 if (moved) {
