@@ -944,6 +944,28 @@ describe('按杠杆隔离（A/B 实验用）', () => {
         setRecoverWindowSeconds: () => { /* noop */ }, setCooldownSeconds: () => { /* noop */ }, reset: () => { /* noop */ },
     });
 
+
+    test('setScaleTiers 换梯度：杠杆回到最高档、新梯度生效', () => {
+        // 用真实 ScaleAction，才验证得了 buildLevels 的重建。
+        // 读写都要接同一个可变值：ScaleAction 每次决策前会 _syncCurrent() 读实时值，
+        // 用 () => 1 会把刚写下的档位又"读"回 1。
+        let current = 1;
+        const scale = new ScaleAction(0.6, [0.85, 0.7], () => current, (v: number) => { current = v; });
+        const fps = makeLever([60, 30]);
+        const c = new ThermalController({ warmupSeconds: 0 }, sampler(), strategy(), fps, scale, () => 1) as any;
+        c.enable();
+
+        c.stepDown();                       // 0.85
+        expect(scale.getCurrent()).toBeCloseTo(0.85, 5);
+
+        c.setScaleTiers([0.9, 0.8, 0.7]);   // 换梯度
+        expect(scale.getCurrent()).toBeCloseTo(1.0, 5);   // 回到最高档
+        expect(scale.getTiers()).toEqual([0.9, 0.8, 0.7]);
+
+        c.stepDown();
+        expect(scale.getCurrent()).toBeCloseTo(0.9, 5);   // 第一步走新梯度
+    });
+
     test('setFrameRateEnabled(false) 后只动分辨率杠杆（帧率保持 60）', () => {
         const scale = makeLever([1, 0.85, 0.7]);
         const fps = makeLever([60, 30]);

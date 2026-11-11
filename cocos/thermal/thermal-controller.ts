@@ -299,6 +299,30 @@ export class ThermalController {
     }
 
     /**
+     * @en Replaces the scale tier ladder at runtime (developer dashboard).
+     * Resets the lever to the top tier; the level is recomputed from the real lever state.
+     * @zh 运行时替换分辨率档位梯度（开发者面板）。杠杆回到最高档，档位按真实状态重算。
+     */
+    public setScaleTiers (tiers: number[]): void {
+        const action: any = this._scaleAction;
+        if (!action || typeof action.setTiers !== 'function') {
+            return;
+        }
+        action.setTiers(tiers);
+        this._recomputeLevelFromActions();
+    }
+
+    /** 运行时替换帧率档位梯度（开发者面板） */
+    public setFrameRateTiers (tiers: number[]): void {
+        const action: any = this._frameRateAction;
+        if (!action || typeof action.setTiers !== 'function') {
+            return;
+        }
+        action.setTiers(tiers);
+        this._recomputeLevelFromActions();
+    }
+
+    /**
      * @en Resets the sampler, the strategy and all transient recovery state (used when switching
      * scenes). When the loop is running it also restarts the warm-up window.
      * @zh 重置采样器、策略和所有瞬态恢复状态（换场景用）。若循环正在运行，同时重新开始预热窗口。

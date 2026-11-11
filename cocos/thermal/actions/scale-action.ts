@@ -79,6 +79,8 @@ export class ScaleAction implements IThermalAction {
     private _currentScale: number;
     private _minScale: number;
     private _levels: number[];
+    /** 档位梯度（不含原始值与地板），setTiers 会替换它 */
+    private _tiers: number[];
     private _writeScale: (scale: number) => void;
     private _readScale: () => number;
     private _fsr?: IThermalFsr;
@@ -104,7 +106,38 @@ export class ScaleAction implements IThermalAction {
         this._readScale = readScale;
         this._originalScale = readScale();
         this._currentScale = this._originalScale;
-        this._levels = buildLevels(this._originalScale, tiers, minScale);
+        this._tiers = (tiers || []).slice();
+        this._levels = buildLevels(this._originalScale, this._tiers, minScale);
+    }
+
+    /**
+     * @en Replaces the tier ladder at runtime (developer dashboard / experiments). The ladder is
+     * rebuilt from the original scale; the lever is restored to the top tier and the step counter
+     * resets, because "tier 1 of the old ladder" has no meaning on a new ladder.
+     * @zh 运行时替换档位梯度（开发者面板/实验用）。按原始缩放重建档位表，并把杠杆还原到最高档、
+     * 步数归零 —— 旧梯度的"第 1 档"在新梯度上没有意义。
+     * @param tiers - descending tiers between the original scale and the floor
+     * @param minScale - optional new floor
+     */
+    public setTiers (tiers: number[], minScale?: number): void {
+        if (Number.isFinite(minScale as number)) {
+            this._minScale = minScale as number;
+        }
+        this._tiers = (tiers || []).filter((v) => Number.isFinite(v));
+        this._levels = buildLevels(this._originalScale, this._tiers, this._minScale);
+        // 还原到最高档：旧档位在新梯度上不存在，留着会让 getStepsDown/档位判断失真
+        this._currentScale = this._levels[0];
+        this._writeScale(this._currentScale);
+        this._fsr?.apply(this._currentScale);
+    }
+
+    /** 当前档位梯度（不含原始缩放与地板），供状态展示 */
+    public getTiers (): number[] {
+        return this._tiers.slice();
+    }
+
+    public getMinScale (): number {
+        return this._minScale;
     }
 
     /**

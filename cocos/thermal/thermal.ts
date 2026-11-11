@@ -130,6 +130,22 @@ export class Thermal {
     }
 
     /**
+     * @en Replaces the resolution tier ladder at runtime (developer dashboard / experiments).
+     * Written into config so it also survives an enable() that happens later.
+     * @zh 运行时替换分辨率档位梯度（开发者面板/实验用）。同时写入配置，enable() 之前调用也不丢。
+     */
+    public setScaleTiers (tiers: number[]): void {
+        this._config.scaleTiers = (tiers || []).slice();
+        this._controller?.setScaleTiers?.(this._config.scaleTiers);
+    }
+
+    /** 运行时替换帧率档位梯度（开发者面板/实验用） */
+    public setFrameRateTiers (tiers: number[]): void {
+        this._config.frameRateTiers = (tiers || []).slice();
+        this._controller?.setFrameRateTiers?.(this._config.frameRateTiers);
+    }
+
+    /**
      * @en Enables/disables the scale (shadingScale) lever at runtime. Disabling restores the
      * original scale and FSR state. The scale lever only affects 3D camera render targets; for
      * 2D/UI-heavy games keep it disabled and use the frame-rate lever only.
@@ -340,6 +356,13 @@ export class Thermal {
         // 与 enableScale 对称：构建期/运行时关掉的帧率杠杆，在控制器创建时补上
         if (config.enableFrameRate === false) {
             controller.setFrameRateEnabled?.(false);
+        }
+        // 自定义档位梯度：enable() 之前设置过也要在控制器创建时应用
+        if (Array.isArray(config.scaleTiers) && config.scaleTiers.length > 0) {
+            controller.setScaleTiers?.(config.scaleTiers);
+        }
+        if (Array.isArray(config.frameRateTiers) && config.frameRateTiers.length > 0) {
+            controller.setFrameRateTiers?.(config.frameRateTiers);
         }
         return controller;
     }

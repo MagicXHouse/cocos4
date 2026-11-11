@@ -54,6 +54,7 @@ export class FrameRateAction implements IThermalAction {
     private _currentFrameRate: number;
     private _minFrameRate: number;
     private _levels: number[];
+    private _tiers: number[];
     private _writeFrameRate: (fps: number) => void;
     private _readFrameRate: () => number;
 
@@ -76,7 +77,8 @@ export class FrameRateAction implements IThermalAction {
         this._readFrameRate = readFrameRate;
         this._originalFrameRate = readFrameRate();
         this._currentFrameRate = this._originalFrameRate;
-        this._levels = buildLevels(this._originalFrameRate, tiers, minFrameRate);
+        this._tiers = (tiers || []).slice();
+        this._levels = buildLevels(this._originalFrameRate, this._tiers, minFrameRate);
     }
 
     /** E02：外部可能直接改 game.frameRate（项目自带的 setFps、其他系统），决策前读实时值 */
@@ -161,6 +163,26 @@ export class FrameRateAction implements IThermalAction {
      * @en Restores the frame rate recorded at construction time.
      * @zh 还原到构造时记录的原帧率。
      */
+    /**
+     * @en Replaces the frame-rate ladder at runtime. Restores to the original frame rate first,
+     * because "tier 1 of the old ladder" has no meaning on the new one.
+     * @zh 运行时替换帧率档位梯度。先把帧率还原到原值 —— 旧梯度的档位在新梯度上没有意义。
+     */
+    public setTiers (tiers: number[], floor?: number): void {
+        if (Number.isFinite(floor as number)) {
+            this._minFrameRate = floor as number;
+        }
+        this._tiers = (tiers || []).filter((v) => Number.isFinite(v));
+        this._levels = buildLevels(this._originalFrameRate, this._tiers, this._minFrameRate);
+        this._currentFrameRate = this._originalFrameRate;
+        this._writeFrameRate(this._currentFrameRate);
+    }
+
+    /** 当前帧率档位梯度（不含原始值与地板） */
+    public getTiers (): number[] {
+        return this._tiers.slice();
+    }
+
     public restore (): void {
         this._currentFrameRate = this._originalFrameRate;
         this._writeFrameRate(this._originalFrameRate);

@@ -135,6 +135,16 @@ export interface ThermalConfig {
      */
     enableFrameRate?: boolean;
     /**
+     * @en Custom scale tier ladder (descending, between 1.0 and minScale). Default [0.85, 0.7].
+     * @zh 自定义分辨率档位梯度（降序，介于 1.0 与 minScale 之间）。默认 [0.85, 0.7]。
+     */
+    scaleTiers?: number[];
+    /**
+     * @en Custom frame-rate tier ladder (descending). Default [60, 30].
+     * @zh 自定义帧率档位梯度（降序）。默认 [60, 30]。
+     */
+    frameRateTiers?: number[];
+    /**
      * @en Cool-down time in seconds between two consecutive adjustments. Default 10.
      * @zh 两次调整之间的冷却时间（秒），默认 10。
      */
