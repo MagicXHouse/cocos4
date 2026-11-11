@@ -146,10 +146,10 @@ export class Thermal {
     }
 
     /**
-     * @en Sets the largest shading scale at which FSR is enabled (`scale <= minScale`). Default 0.85.
-     * Lower it to 0.7 when the FSR cost outweighs the saving of the 0.85 tier.
-     * @zh 设置启用 FSR 的最大 shadingScale（`scale <= minScale` 才开），默认 0.85。
-     * 若 0.85 档 FSR 的固定开销盖过了降采样省下的时间，可下调到 0.7。
+     * @en Sets the largest shading scale at which FSR is enabled (`scale <= minScale`). Default 0.8.
+     * Lower it to 0.6 when the FSR cost outweighs the saving of the 0.8 tier.
+     * @zh 设置启用 FSR 的最大 shadingScale（`scale <= minScale` 才开），默认 0.8。
+     * 若 0.8 档 FSR 的固定开销盖过了降采样省下的时间，可下调到 0.6。
      */
     public setFsrMinScale (minScale: number): void {
         this._config.fsrMinScale = minScale;
@@ -271,11 +271,11 @@ export class Thermal {
      */
     private static _sanitizeMinScale (raw: number | undefined): number {
         if (raw === undefined) {
-            return 0.3;
+            return 0.6;
         }
         if (!Number.isFinite(raw) || raw <= 0) {
-            console.warn('[Thermal] minScale=' + String(raw) + ' 非法（必须 > 0，预设 0.7 / 0.5 / 0.3），已回落 0.3');
-            return 0.3;
+            console.warn('[Thermal] minScale=' + String(raw) + ' 非法（必须 > 0，预设 0.8 / 0.6），已回落 0.6');
+            return 0.6;
         }
         if (raw > 1) {
             console.warn('[Thermal] minScale=' + String(raw) + ' > 1：已收敛到 1（等于不降分辨率）；'
@@ -292,7 +292,7 @@ export class Thermal {
         const triggerPercent = Thermal._sanitizeTriggerPercent(config.triggerPercent);
         const strategy = new ThermalStrategy({ ...config, triggerPercent });
         // 微信 60Hz 下 45 非 60 的整数因子、且离设备自然帧率太近易振荡，帧率档用 [60, 30]；
-        // 分辨率地板 0.3（降档糊得更明显、真降负载）。
+        // 分辨率地板 0.6（三档 1.00 / 0.80 / 0.60，避免降到 0.3 那种明显糊成马赛克的观感）。
         //
         // E05：minFrameRate 的合法性按"当前天花板"判，而不是只认 30/20/15 三个字面量：
         //   - min >= 天花板：**钉住帧率**，buildLevels(original, tiers, min>=original) 退化成单元素，
@@ -315,7 +315,7 @@ export class Thermal {
         const frameRateAction = new FrameRateAction(minFps, [60, 30]);
         // Always create both objects so setScaleEnabled()/setFsrEnabled() work at runtime;
         // config only sets their initial enabled state.
-        const fsr = new ThermalFsr(config.fsrMaterial ?? null, config.fsrSharpness ?? 0.8, config.fsrMinScale ?? 0.85);
+        const fsr = new ThermalFsr(config.fsrMaterial ?? null, config.fsrSharpness ?? 0.8, config.fsrMinScale ?? 0.8);
         fsr.setEnabled?.(config.enableFsr !== false);
         this._fsr = fsr;
         const scaleAction = new ScaleAction(Thermal._sanitizeMinScale(config.minScale), undefined, undefined, undefined, fsr);

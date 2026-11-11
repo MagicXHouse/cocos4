@@ -86,14 +86,14 @@ export class ScaleAction implements IThermalAction {
 
     /**
      * @param minScale - The floor scale. Default 0.6.
-     * @param tiers - Discrete descending tiers used to step down. Default [0.85, 0.7].
+     * @param tiers - Discrete descending tiers used to step down. Default [0.8, 0.6].
      * @param readScale - Injectable reader (used by tests). Defaults to reading the runtime pipeline shadingScale.
      * @param writeScale - Injectable writer (used by tests). Defaults to writing pipeline shadingScale + forceResize.
      * @param fsr - Optional FSR controller. When provided, it is applied on every scale change.
      */
     constructor (
         minScale = 0.6,
-        tiers: number[] = [0.85, 0.7],
+        tiers: number[] = [0.8, 0.6],
         readScale: () => number = defaultReadScale,
         writeScale: (scale: number) => void = defaultWriteScale,
         fsr: IThermalFsr | undefined = undefined,

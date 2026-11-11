@@ -119,12 +119,12 @@ describe('Thermal facade', () => {
         warn.mockRestore();
     });
 
-    test('E09：minScale=0 非法（会产出 scale=0 档），回落 0.3 并告警', () => {
+    test('E09：minScale=0 非法（会产出 scale=0 档），回落 0.6 并告警', () => {
         const warn = jest.spyOn(console, 'warn').mockImplementation(() => { /* silence */ });
         const facade = new Thermal();
         facade.enable({ minScale: 0 });
 
-        expect(ScaleAction).toHaveBeenCalledWith(0.3, undefined, undefined, undefined, expect.anything());
+        expect(ScaleAction).toHaveBeenCalledWith(0.6, undefined, undefined, undefined, expect.anything());
         expect(warn).toHaveBeenCalled();
         warn.mockRestore();
     });
