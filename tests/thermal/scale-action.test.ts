@@ -2,15 +2,15 @@ import { cclegacy } from '../../cocos/core';
 import { ScaleAction } from '../../cocos/thermal/actions/scale-action';
 
 describe('ScaleAction', () => {
-    test('默认三档：1.00 -> 0.80 -> 0.60（不再有 0.85 / 0.70 / 0.30）', () => {
+    test('默认三档：1.00 -> 0.85 -> 0.70（更温和，不再有 0.80 / 0.60 / 0.30）', () => {
         let current = 1.0;
         const written: number[] = [];
-        const action = new ScaleAction(0.6, undefined, () => current, (s) => { current = s; written.push(s); });
+        const action = new ScaleAction(0.7, undefined, () => current, (s) => { current = s; written.push(s); });
 
         expect(action.stepDown()).toBe(true);
         expect(action.stepDown()).toBe(true);
-        expect(action.stepDown()).toBe(false);   // 0.60 就是地板
-        expect(written).toEqual([0.8, 0.6]);
+        expect(action.stepDown()).toBe(false);   // 0.70 就是地板
+        expect(written).toEqual([0.85, 0.7]);
         expect(action.isAtFloor()).toBe(true);
     });
 

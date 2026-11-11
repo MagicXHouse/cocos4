@@ -109,8 +109,8 @@ export interface ThermalConfig {
      * **升档顺序不开放**：手动 stepUp 固定 frameRate-first、自动试探固定 scale-first。
      */
     downgradeOrder?: 'scale-first' | 'frameRate-first';    /**
-     * @en Minimum allowed rendering scale. Default 0.6 (three tiers: 1.00 / 0.80 / 0.60).
-     * @zh 允许的最低渲染缩放，默认 0.6（三档 1.00 / 0.80 / 0.60）。
+     * @en Minimum allowed rendering scale. Default 0.7 (three tiers: 1.00 / 0.85 / 0.70).
+     * @zh 允许的最低渲染缩放，默认 0.7（三档 1.00 / 0.85 / 0.70）。
      */
     minScale?: number;
     /**
@@ -245,12 +245,12 @@ export interface ThermalConfig {
      */
     fsrSharpness?: number;
     /**
-     * @en The largest shading scale at which FSR is enabled (`scale <= fsrMinScale`). Default 0.8.
+     * @en The largest shading scale at which FSR is enabled (`scale <= fsrMinScale`). Default 0.85.
      * Set it to 1.0 to always upscale whenever the resolution is lowered; set it lower (e.g. 0.7)
      * when FSR's fixed cost (two native-resolution full-screen passes) outweighs the saving of the
      * first tier.
-     * @zh 启用 FSR 的最大 shadingScale（`scale <= fsrMinScale` 才开）。默认 0.8。
-     * 设为 1.0 = 只要降分辨率就升采样；设为更低（如 0.6）= 0.8 档先纯降采样，0.6 档才开 FSR
+     * @zh 启用 FSR 的最大 shadingScale（`scale <= fsrMinScale` 才开）。默认 0.85。
+     * 设为 1.0 = 只要降分辨率就升采样；设为更低（如 0.7）= 0.85 档先纯降采样，0.7 档才开 FSR
      * （FSR 的固定开销是两个原生分辨率全屏 pass，浅档可能入不敷出）。
      */
     fsrMinScale?: number;
