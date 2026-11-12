@@ -2,7 +2,10 @@
     "$schema": "./cc.config.schema.json",
     "features": {
         "base": {
-            "modules": ["base"],
+            "modules": [
+                "base",
+                "thermal"
+            ],
             "dependentAssets": [
                 "970b0598-bcb0-4714-91fb-2e81440dccd8",
                 "bcd64cc6-2dd9-43f6-abbe-66318d332032",
