@@ -572,10 +572,21 @@ export class ThermalController {
         const targetMs = 1000 / this._readCurrentFps();
         const action = this._strategy.update(avgMs, targetMs);
         if (action === 'DOWN') {
-            this._doStepDown(avgMs, targetMs, now, false);
-            // 降档后：若启用自动升档，启动（或重置）试探计时，到 probeIntervalSeconds 后尝试升档。
+            const moved = this._doStepDown(avgMs, targetMs, now, false);
             if (this._config.enableAutoUpgrade) {
-                this._nextAutoProbeAt = now + this._probeIntervalMs;
+                if (moved) {
+                    // 真的降了一档：从现在起算 probeIntervalSeconds 后试探升档。
+                    this._nextAutoProbeAt = now + this._probeIntervalMs;
+                } else if (this._nextAutoProbeAt <= 0) {
+                    // 已经在地板（没有更低的档可降）且仍超预算：从这里开始计时。
+                    // 之前这里会无条件重置计时器 —— 结果"降到底还超预算"的场景下
+                    // 每秒都重置一次，自动升档永远不会触发（GB3 实测就是停在 0.70 不动）。
+                    this._nextAutoProbeAt = now + this._probeIntervalMs;
+                } else {
+                    // 到点了就做一次"过降自检"：升一档看帧时间会不会变差，
+                    // 变差会在下一次 DOWN 里被定向撤销，并触发指数退避。
+                    this._maybeAutoProbe(now);
+                }
             }
         } else if (action === 'UP') {
             this._doStepUp(avgMs, targetMs, now, false);

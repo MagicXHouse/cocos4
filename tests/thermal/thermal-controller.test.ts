@@ -966,6 +966,41 @@ describe('按杠杆隔离（A/B 实验用）', () => {
         expect(scale.getCurrent()).toBeCloseTo(0.9, 5);   // 第一步走新梯度
     });
 
+
+
+
+    test('降到底仍超预算时，自动升档仍会按 probeInterval 触发（回归）', () => {
+        // 真机现象（GB3）：30.8ms vs 目标 16.67ms，策略每秒判 DOWN，
+        // 但两个杠杆都已到底 —— 旧实现每次 DOWN 都把 _nextAutoProbeAt 重置成 now+60s，
+        // 自动升档永远触发不了，分辨率一直停在 0.70。
+        let now = 0;
+        // 读写都接同一个可变值：ScaleAction 每次决策前会 _syncCurrent() 读实时值，
+        // 用 () => 1 会把刚写下的档位又读回 1。
+        let cur = 1;
+        const scale = new ScaleAction(0.7, [0.85, 0.7], () => cur, (v: number) => { cur = v; });
+        const fps = makeLever([60, 30]);
+        fps.stepDown = () => false;   // 模拟"只勾分辨率"：帧率杠杆动不了
+        const c = new ThermalController(
+            { warmupSeconds: 0, enableAutoUpgrade: true, probeIntervalSeconds: 60, recoveryProbeSeconds: 5, triggerPercent: 10, cooldownSeconds: 0 },
+            { start: () => { /* noop */ }, stop: () => { /* noop */ }, reset: () => { /* noop */ },
+              getAverageFrameTimeMs: () => 30.8, getSampleCount: () => 100 },
+            { update: () => 'DOWN', setThreshold: () => { /* noop */ }, setRecoverThreshold: () => { /* noop */ },
+              setRecoverWindowSeconds: () => { /* noop */ }, setCooldownSeconds: () => { /* noop */ }, reset: () => { /* noop */ } },
+            fps, scale, () => 1, () => now,
+        ) as any;
+        c.enable();
+        c.stepDown(); c.stepDown();          // 手动降到底
+        expect(scale.getCurrent()).toBe(0.7);
+
+        let probed = false;
+        for (let k = 0; k < 200; k++) {
+            now += 1000;
+            c._evaluate();
+            if (scale.getCurrent() > 0.7) { probed = true; break; }
+        }
+        expect(probed).toBe(true);
+    });
+
     test('setFrameRateEnabled(false) 后只动分辨率杠杆（帧率保持 60）', () => {
         const scale = makeLever([1, 0.85, 0.7]);
         const fps = makeLever([60, 30]);
