@@ -102,6 +102,19 @@ export class Thermal {
      * @zh 运行时切换降档顺序（`scale-first` / `frameRate-first`）。
      * 只影响**之后**的降档，已经降过的档不会回滚。非法值告警后忽略（与构造期校验同一契约）。
      */
+    /**
+     * @en Switches the upgrade order at runtime ('auto' keeps the default behavior).
+     * @zh 运行时切换升档顺序（'auto' 保持默认：自动试探先升分辨率、手动先升帧率）。
+     */
+    public setUpgradeOrder (order: 'auto' | 'scale-first' | 'frameRate-first'): void {
+        this._config.upgradeOrder = order;
+        this._controller?.setUpgradeOrder?.(order);
+    }
+
+    public getUpgradeOrder (): string {
+        return this._controller?.getUpgradeOrder?.() ?? (this._config.upgradeOrder ?? 'auto');
+    }
+
     public setDowngradeOrder (order: ThermalDowngradeOrder): void {
         if (order !== 'scale-first' && order !== 'frameRate-first') {
             console.warn('[Thermal] setDowngradeOrder(' + String(order)

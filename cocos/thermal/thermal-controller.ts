@@ -221,6 +221,24 @@ export class ThermalController {
      * @zh 运行时切换降档顺序。`_doStepDown` 每一步都读 `_config.downgradeOrder`，
      * 所以下一次降档立即生效（已经降过的档不会回滚）。
      */
+    /**
+     * @en Switches the upgrade (recovery) order at runtime.
+     * 'auto' keeps the default split: auto probe = scale-first, manual = frameRate-first.
+     * @zh 运行时切换升档顺序。'auto' 保持默认差异（自动试探先升分辨率、手动先升帧率）；
+     * 传 'scale-first' 则一律先把画质提回来，再提帧率。
+     */
+    public setUpgradeOrder (order: 'auto' | 'scale-first' | 'frameRate-first'): void {
+        if (order !== 'auto' && order !== 'scale-first' && order !== 'frameRate-first') {
+            console.warn('[Thermal] setUpgradeOrder(' + String(order) + ') 非法，已忽略（只接受 auto / scale-first / frameRate-first）');
+            return;
+        }
+        this._config.upgradeOrder = order;
+    }
+
+    public getUpgradeOrder (): string {
+        return this._config.upgradeOrder ?? 'auto';
+    }
+
     public setDowngradeOrder (order: ThermalDowngradeOrder): void {
         if (order !== 'scale-first' && order !== 'frameRate-first') {
             console.warn('[Thermal] setDowngradeOrder(' + String(order)
@@ -756,7 +774,16 @@ export class ThermalController {
         let moved = false;
         const scaleAction = this._scaleAction;
 
-        if (autoScaleFirst) {
+        // 升档顺序：config.upgradeOrder 显式指定时覆盖 auto/manual 的默认差异。
+        //   'auto'（默认）= 自动试探 scale-first、手动 frameRate-first（既有行为）
+        //   'scale-first'    = 两种都先升分辨率（先提升画质）
+        //   'frameRate-first'= 两种都先升帧率
+        const upOrder = this._config.upgradeOrder;
+        const scaleFirst = upOrder === 'scale-first' ? true
+            : upOrder === 'frameRate-first' ? false
+                : autoScaleFirst;
+
+        if (scaleFirst) {
             // 自动试探：先升分辨率，满后再升帧率。
             if (scaleAction && (force || !this._isUpBlocked('scale', now))) {
                 from = scaleAction.getCurrent();

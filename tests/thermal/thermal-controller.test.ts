@@ -966,6 +966,39 @@ describe('按杠杆隔离（A/B 实验用）', () => {
         expect(scale.getCurrent()).toBeCloseTo(0.9, 5);   // 第一步走新梯度
     });
 
+
+    test('upgradeOrder=scale-first：先升分辨率再升帧率（默认 auto 也先升分辨率）', () => {
+        // 构造时原始 scale 必须是 1.0，否则 stepUp 没有更高的档可升
+        let cur = 1;
+        const scale = new ScaleAction(0.6, [0.85, 0.7], () => cur, (v: number) => { cur = v; });
+        const fps = makeLever([60, 30]);
+        let fpsRestored = false;
+        fps.stepUp = () => { fpsRestored = true; return true; };
+        const c = new ThermalController({ warmupSeconds: 0, upgradeOrder: 'scale-first' },
+            sampler(), strategy(), fps, scale, () => 1) as any;
+        c.enable();
+
+        cur = 0.7;          // 模拟"已经降到 0.70"，再手动升档
+        c.stepUp(true);                 // 手动升档；未配 upgradeOrder 时默认 frameRate-first
+        expect(cur).toBeGreaterThan(0.7);   // 先动了分辨率
+        expect(fpsRestored).toBe(false);    // 帧率没被升
+    });
+
+    test('upgradeOrder=frameRate-first：先升帧率', () => {
+        let cur = 0.7;
+        const scale = new ScaleAction(0.6, [0.85, 0.7], () => cur, (v: number) => { cur = v; });
+        const fps = makeLever([60, 30]);
+        let fpsRestored = false;
+        fps.stepUp = () => { fpsRestored = true; return true; };
+        const c = new ThermalController({ warmupSeconds: 0, upgradeOrder: 'frameRate-first' },
+            sampler(), strategy(), fps, scale, () => 1) as any;
+        c.enable();
+
+        c.stepUp(true);
+        expect(fpsRestored).toBe(true);
+        expect(cur).toBe(0.7);          // 分辨率没动
+    });
+
     test('setFrameRateEnabled(false) 后只动分辨率杠杆（帧率保持 60）', () => {
         const scale = makeLever([1, 0.85, 0.7]);
         const fps = makeLever([60, 30]);

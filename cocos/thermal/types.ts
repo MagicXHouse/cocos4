@@ -42,6 +42,15 @@ export enum ThermalLevel {
 export type ThermalDowngradeOrder = 'scale-first' | 'frameRate-first';
 
 /**
+ * @en Upgrade (recovery) order preset.
+ *   - `'auto'`（默认）保持现有行为：自动试探走 scale-first（先还画质），手动 stepUp 走 frameRate-first。
+ *   - `'scale-first'`：两种升档都先升分辨率（先提升画质，再提升帧率）。
+ *   - `'frameRate-first'`：两种升档都先升帧率。
+ * @zh 升档（回升）顺序预设。默认 `'auto'` 保持既有行为；显式指定后，自动与手动升档都按该顺序。
+ */
+export type ThermalUpgradeOrder = 'auto' | 'scale-first' | 'frameRate-first';
+
+/**
  * @en Configurable parameters of the thermal strategy. Every field is optional and carries a default value.
  * @zh 温控策略的可配置参数。所有字段均可选并带有默认值。
  */
@@ -108,7 +117,14 @@ export interface ThermalConfig {
      * 开放这个开关是因为只有开发商清楚自己的游戏对分辨率还是对帧率更敏感（方案 §2.3）。
      * **升档顺序不开放**：手动 stepUp 固定 frameRate-first、自动试探固定 scale-first。
      */
-    downgradeOrder?: 'scale-first' | 'frameRate-first';    /**
+    downgradeOrder?: 'scale-first' | 'frameRate-first';
+    /**
+     * @en Upgrade order override. Omitted = keep the existing split behavior
+     * (auto probe = scale-first, manual stepUp = frameRate-first).
+     * @zh 升档顺序覆盖项。不填 = 保持既有行为（自动试探先升分辨率、手动升档先升帧率）；
+     * 填 'scale-first' 则两种升档都先提升画质、再提升帧率。
+     */
+    upgradeOrder?: ThermalUpgradeOrder;    /**
      * @en Minimum allowed rendering scale. Default 0.7 (three tiers: 1.00 / 0.85 / 0.70).
      * @zh 允许的最低渲染缩放，默认 0.7（三档 1.00 / 0.85 / 0.70）。
      */
