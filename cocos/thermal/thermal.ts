@@ -130,6 +130,21 @@ export class Thermal {
     }
 
     /**
+     * @en Enables/disables the periodic recovery probe (auto upgrade) at runtime.
+     * Written into config too, so calling it before enable() also takes effect.
+     * @zh 运行时开关"自动试探升档"。同时写进配置，enable() 之前调用也生效。
+     * 用途：同一套包跑「只降不升」/「降了会回升」两组对照。
+     */
+    public setAutoUpgradeEnabled (enabled: boolean): void {
+        this._config.enableAutoUpgrade = enabled;
+        this._controller?.setAutoUpgradeEnabled?.(enabled);
+    }
+
+    public isAutoUpgradeEnabled (): boolean {
+        return this._controller?.isAutoUpgradeEnabled?.() ?? !!this._config.enableAutoUpgrade;
+    }
+
+    /**
      * @en Replaces the resolution tier ladder at runtime (developer dashboard / experiments).
      * Written into config so it also survives an enable() that happens later.
      * @zh 运行时替换分辨率档位梯度（开发者面板/实验用）。同时写入配置，enable() 之前调用也不丢。
@@ -137,6 +152,18 @@ export class Thermal {
     public setScaleTiers (tiers: number[]): void {
         this._config.scaleTiers = (tiers || []).slice();
         this._controller?.setScaleTiers?.(this._config.scaleTiers);
+    }
+
+    /** 当前分辨率档位梯度（控制器未建时返回配置值） */
+    public getScaleTiers (): number[] {
+        const fromController = this._controller?.getScaleTiers?.();
+        return (fromController && fromController.length) ? fromController : (this._config.scaleTiers || []).slice();
+    }
+
+    /** 当前帧率档位梯度 */
+    public getFrameRateTiers (): number[] {
+        const fromController = this._controller?.getFrameRateTiers?.();
+        return (fromController && fromController.length) ? fromController : (this._config.frameRateTiers || []).slice();
     }
 
     /** 运行时替换帧率档位梯度（开发者面板/实验用） */
@@ -295,11 +322,12 @@ export class Thermal {
 
     /**
      * @en Sanitizes `minScale`. It must be in (0, 1]: `<= 0` / NaN would produce a `scale = 0` tier
-     * (a zero-pixel render target), so they fall back to 0.3; a value `> 1` means "the floor is above
-     * the original scale", i.e. the scale lever should not move, so it is clamped to 1 with a hint
-     * to use `enableScale=false` instead.
+     * (a zero-pixel render target), so they fall back to 0.7 (the current floor, i.e. the last tier);
+     * a value `> 1` means "the floor is above the original scale", i.e. the scale lever should not move,
+     * so it is clamped to 1 with a hint to use `enableScale=false` instead.
      * @zh 校验 `minScale`，必须落在 (0, 1]：`<= 0` 或 NaN 会产出 `scale = 0` 档（渲染目标 0 像素），
-     * 回落 0.3；大于 1 表示"地板高于原值"= 不该降分辨率，收敛到 1 并提示改用 `enableScale=false`。
+     * 回落 0.7（现行地板 = 档位表最后一档）；大于 1 表示"地板高于原值"= 不该降分辨率，
+     * 收敛到 1 并提示改用 `enableScale=false`。
      */
     private static _sanitizeMinScale (raw: number | undefined): number {
         if (raw === undefined) {

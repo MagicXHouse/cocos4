@@ -299,6 +299,25 @@ export class ThermalController {
     }
 
     /**
+     * @en Enables/disables the periodic recovery probe (auto upgrade) at runtime.
+     * Disabling cancels any pending probe; the current level is kept as-is.
+     * @zh 运行时开关"自动试探升档"。关闭时取消待执行的试探，当前档位保持不变。
+     * 用途：同一套包跑「只降不升」/「降了会回升」两组对照，不必重新打包。
+     */
+    public setAutoUpgradeEnabled (enabled: boolean): void {
+        this._config.enableAutoUpgrade = enabled;
+        if (!enabled) {
+            this._nextAutoProbeAt = 0;
+        } else if (this._nextAutoProbeAt <= 0) {
+            this._nextAutoProbeAt = this._timeSource() + this._probeIntervalMs;
+        }
+    }
+
+    public isAutoUpgradeEnabled (): boolean {
+        return !!this._config.enableAutoUpgrade;
+    }
+
+    /**
      * @en Replaces the scale tier ladder at runtime (developer dashboard).
      * Resets the lever to the top tier; the level is recomputed from the real lever state.
      * @zh 运行时替换分辨率档位梯度（开发者面板）。杠杆回到最高档，档位按真实状态重算。
@@ -310,6 +329,18 @@ export class ThermalController {
         }
         action.setTiers(tiers);
         this._recomputeLevelFromActions();
+    }
+
+    /** 当前分辨率档位梯度（不含 1.0 与地板） */
+    public getScaleTiers (): number[] {
+        const action: any = this._scaleAction;
+        return (action && typeof action.getTiers === 'function') ? action.getTiers() : [];
+    }
+
+    /** 当前帧率档位梯度（不含原值与地板） */
+    public getFrameRateTiers (): number[] {
+        const action: any = this._frameRateAction;
+        return (action && typeof action.getTiers === 'function') ? action.getTiers() : [];
     }
 
     /** 运行时替换帧率档位梯度（开发者面板） */
